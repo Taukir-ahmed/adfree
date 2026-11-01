@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CleanPlay — Video found</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;background:transparent;color:#f3efff;font-family:system-ui,sans-serif}
+.card{min-height:154px;border:1px solid #7050ad;border-radius:14px;background:linear-gradient(125deg,#201333,#10111d);padding:15px;box-shadow:0 10px 32px #0006}
+header{display:flex;align-items:center;gap:8px;font-weight:650;font-size:14px}
+.mark{color:#b28bff}.close{margin-left:auto;border:0;background:none;color:#b6accb;font-size:20px;cursor:pointer}
+#detail{margin:7px 0 12px;color:#bbb3cb;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#choices{margin-bottom:10px}#choices[hidden]{display:none}
+#choices label{display:block;color:#bbb3cb;font-size:11px;margin-bottom:4px}
+select{width:100%;padding:6px;border:1px solid #7050ad;border-radius:6px;background:#211b2d;color:#f3efff;font:12px system-ui}
+.actions{display:flex;gap:8px}button{font-family:inherit}
+.play{flex:1;background:#9763ed;color:white;font-weight:650;border:0;border-radius:8px;padding:9px;cursor:pointer}
+.tab{background:#292034;color:#ddd1ef;border:1px solid #4d3a68;border-radius:8px;padding:8px 12px;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}button:focus-visible{outline:2px solid #ddd;outline-offset:2px}
+</style>
+</head>
+<body>
+<section class="card" aria-label="Video found">
+<header><span class="mark">⚡</span><span id="heading">Video found</span><button id="dismiss" class="close" aria-label="Dismiss for this page">×</button></header>
+<div id="detail" role="status">Getting video link…</div>
+<div id="choices" hidden><label for="sources">Choose a video link</label><select id="sources"></select></div>
+<div class="actions"><button id="play" class="play" disabled>▶ Play in new tab</button><button id="newTab" class="tab" disabled>Play here</button></div>
+</section>
+<script src="auto-prompt-ui.js"></script>
+</body></html>

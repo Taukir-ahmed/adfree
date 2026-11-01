@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>CleanPlay</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #050507;
+  color: #e2e2f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+}
+#bar {
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  align-items: center;
+}
+#logo { font-size: 17px; font-weight: 700; background: linear-gradient(135deg,#7c3aed,#c084fc); -webkit-background-clip:text; -webkit-text-fill-color:transparent; white-space:nowrap; }
+#urlInput {
+  flex: 1;
+  background: #16161e;
+  border: 1px solid #2a2a3a;
+  border-radius: 8px;
+  padding: 9px 13px;
+  color: #e2e2f0;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+#urlInput:focus { border-color: #7c3aed; }
+.btn { padding: 9px 16px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-p { background: linear-gradient(135deg,#7c3aed,#c084fc); color: #fff; }
+.btn-s { background: #16161e; color: #8888aa; border: 1px solid #2a2a3a; }
+.btn:disabled { opacity: .5; cursor: default; }
+video { width: 100%; max-width: 960px; border-radius: 12px; background: #000; max-height: 82vh; display: block; outline: none; }
+#qualityInfo { width:100%; max-width:960px; color:#aaaac4; font-size:12px; line-height:1.6; margin-top:8px; }
+#msg { color: #4a4a6a; font-size: 14px; margin-top: 40px; text-align: center; }
+#dlBox {
+  width: 100%;
+  max-width: 960px;
+  margin-top: 12px;
+  display: none;
+}
+#dlBox.show { display: block; }
+#dlBar { height: 5px; background: #1e1e2a; border-radius: 5px; overflow: hidden; }
+#dlFill { height: 100%; width: 0%; background: linear-gradient(90deg,#7c3aed,#c084fc); border-radius: 5px; transition: width .2s; }
+#dlMsg { font-size: 12px; color: #8888aa; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <span id="logo">⚡ CleanPlay</span>
+  <input id="urlInput" type="text" placeholder="Paste .mp4 / .m3u8 / .webm URL and press Enter…" />
+  <button class="btn btn-p" id="btnPlay">▶ Play</button>
+  <button class="btn btn-p" id="btnDl">⬇ Download</button>
+  <button class="btn btn-s" id="btnCopy">⎘ Copy</button>
+</div>
+<video id="v" controls autoplay></video>
+<div id="qualityInfo" role="status" aria-live="polite">Quality appears when video loads.</div>
+<div id="dlBox">
+  <div id="dlBar"><div id="dlFill"></div></div>
+  <div id="dlMsg"></div>
+</div>
+<div id="msg">No video loaded.</div>
+<script src="hls.min.js"></script>
+<script src="mux.min.js"></script>
+<script src="detector.js"></script>
+<script src="player.js"></script>
+</body>
+</html>

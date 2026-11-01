@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  width: 340px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0f0f13;
+  color: #e2e2f0;
+}
+#header {
+  padding: 11px 14px;
+  border-bottom: 1px solid #1e1e2a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#logo {
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #7c3aed, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  flex: 1;
+}
+#badge {
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 12px;
+  background: #1e1e2a;
+  color: #6b6b8a;
+  border: 1px solid #2a2a3a;
+  white-space: nowrap;
+}
+#badge.has { background: #2d1f5e; color: #a78bfa; border-color: #5b21b6; }
+#badge.testing { background: #1c2a1c; color: #4ade80; border-color: #16a34a; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+/* Best video card - shown when we have a winner */
+#bestCard {
+  margin: 10px 10px 0;
+  background: linear-gradient(135deg, #1a1035, #0f1a10);
+  border: 1px solid #5b21b6;
+  border-radius: 10px;
+  padding: 12px;
+  display: none;
+}
+#bestCard.show { display: block; }
+#bestLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #a78bfa;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 8px;
+}
+#bestActions { display: flex; gap: 6px; margin-top: 8px; }
+.btn-best-play {
+  flex: 1;
+  padding: 9px;
+  border-radius: 7px;
+  border: none;
+  background: linear-gradient(135deg,#7c3aed,#c084fc);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-best-overlay {
+  padding: 9px 12px;
+  border-radius: 7px;
+  border: 1px solid #3b2a6e;
+  background: #1e1e2a;
+  color: #a78bfa;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-best-copy {
+  padding: 9px 12px;
+  border-radius: 7px;
+  border: 1px solid #2a2a3a;
+  background: #1e1e2a;
+  color: #6b6b8a;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+#bestUrl {
+  font-size: 10px;
+  color: #4a4a6a;
+  word-break: break-all;
+  line-height: 1.4;
+}
+#bestType {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+.tag-mp4 { background: #064e3b; color: #34d399; }
+.tag-m3u8 { background: #2e1065; color: #a78bfa; }
+.tag-webm { background: #451a03; color: #fb923c; }
+.tag-other { background: #1e1e2a; color: #6b6b8a; }
+
+/* Testing progress */
+#testProgress {
+  margin: 8px 10px 0;
+  display: none;
+}
+#testProgress.show { display: block; }
+#progressBar {
+  height: 3px;
+  background: #1e1e2a;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+#progressFill {
+  height: 100%;
+  background: linear-gradient(90deg,#7c3aed,#c084fc);
+  border-radius: 3px;
+  width: 0%;
+  transition: width .3s;
+}
+#testMsg { font-size: 11px; color: #4a4a6a; }
+
+/* All links section */
+#allSection {
+  padding: 8px 10px 4px;
+}
+#allToggle {
+  font-size: 11px;
+  color: #4a4a6a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 0;
+}
+#allToggle:hover { color: #a78bfa; }
+#allList {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+#allList.open { display: flex; }
+.mini-card {
+  background: #16161e;
+  border: 1px solid #1e1e2a;
+  border-radius: 7px;
+  padding: 6px 9px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.mini-card:hover { border-color: #5b21b6; }
+.mini-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.mini-url { font-size: 10px; color: #4a4a6a; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-score { font-size: 9px; color: #3b3b5a; flex-shrink: 0; }
+
+#empty {
+  padding: 28px 14px;
+  text-align: center;
+  color: #4a4a6a;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+#empty .icon { font-size: 32px; margin-bottom: 8px; }
+
+#footer {
+  padding: 8px 10px;
+  border-top: 1px solid #1e1e2a;
+  display: flex;
+  gap: 6px;
+}
+.footer-btn {
+  flex: 1;
+  padding: 7px;
+  border-radius: 7px;
+  border: 1px solid #1e1e2a;
+  background: #16161e;
+  color: #6b6b8a;
+  font-size: 11.5px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.footer-btn:hover { color: #a78bfa; border-color: #5b21b6; }
+
+#toast {
+  position: fixed;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #34d399;
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity .2s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="header">
+  <span id="logo">⚡ CleanPlay 3.5</span>
+  <span id="badge">Scanning…</span>
+</div>
+
+<div id="empty">
+  <div class="icon">🎬</div>
+  CleanPlay checks hidden sources and embedded players automatically.<br>If a site creates its link only after interaction, start its player once, then scan again.
+</div>
+
+<!-- Best URL card -->
+<div id="bestCard">
+  <div id="bestLabel">✦ Detected Video — Auto Selected</div>
+  <span id="bestType" class="tag-mp4">MP4</span>
+  <div id="bestUrl"></div>
+  <div id="bestActions">
+    <button class="btn-best-play" id="btnPlay">▶ Play Ad-Free</button>
+    <button class="btn-best-overlay" id="btnDownload" title="Download video">⬇</button>
+    <button class="btn-best-overlay" id="btnOverlay" title="Play in an isolated on-page player">📺</button>
+    <button class="btn-best-copy" id="btnCopy" title="Copy URL">⎘</button>
+  </div>
+</div>
+
+<!-- Test progress bar -->
+<div id="testProgress">
+  <div id="progressBar"><div id="progressFill"></div></div>
+  <div id="testMsg">Testing URLs…</div>
+</div>
+
+<!-- All detected links (collapsed) -->
+<div id="allSection" style="display:none">
+  <button id="allToggle">▶ Show all detected links</button>
+  <div id="allList"></div>
+</div>
+
+<div id="footer">
+  <button class="footer-btn" id="btnRefresh">↻ Refresh</button>
+  <button class="footer-btn" id="btnScan">🔍 Deep Scan</button>
+</div>
+
+<div id="toast"></div>
+<script src="popup.js"></script>
+</body>
+</html>

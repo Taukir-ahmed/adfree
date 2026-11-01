@@ -1,0 +1,12 @@
+{
+  "name": "cleanplay-web",
+  "version": "1.0.0",
+  "description": "CleanPlay Mobile & Web Video Player",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["cleanplay", "terabox", "video", "player", "hls"],
+  "author": "",
+  "license": "ISC"
+}
