@@ -88,7 +88,14 @@
         body: JSON.stringify({ url })
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (_) {
+        throw new Error(`Server returned unexpected response (${res.status}). If deploying on Vercel, please wait a moment for the build to finish.`);
+      }
+
       if (!res.ok || !data.ok) {
         throw new Error(data.error || 'Could not resolve stream');
       }
@@ -207,7 +214,7 @@
     }
 
     // 1. Mobile Safari Native HLS Check
-    if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+    if (isHls && videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
       videoPlayer.src = streamUrl;
       videoPlayer.addEventListener('loadedmetadata', () => {
         playerLoader.hidden = true;

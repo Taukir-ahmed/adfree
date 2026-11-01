@@ -302,77 +302,31 @@ const server = http.createServer(async (req, res) => {
   }
 
   // API: Resolve video link
-  if (pathname === '/api/resolve' && req.method === 'POST') {
+  if (pathname === '/api/resolve') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
     req.on('end', async () => {
-      try {
-        const data = JSON.parse(body || '{}');
-        const inputUrl = String(data.url || '').trim();
-        if (!inputUrl) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ ok: false, error: 'URL is required' }));
-        }
-
-        // TeraBox Resolver
-        const isTera = /(?:terabox|1024tera|freeterabox|terashare|4funbox|mirrobox|nephobox|momerybox|tibibox|dubox)/i.test(inputUrl);
-        if (isTera) {
-          const result = await resolveTeraBox(inputUrl);
-          if (!result.files.length) {
-            res.writeHead(404, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ ok: false, error: 'No video files found in this link. The link may have expired or requires login.' }));
-          }
-
-          // Format files with proxy URLs
-          for (const file of result.files) {
-            file.proxyQualities = {};
-            for (const [q, streamUrl] of Object.entries(file.qualities)) {
-              file.proxyQualities[q] = `/api/proxy?url=${encodeURIComponent(streamUrl)}`;
-            }
-            // Default stream quality: preferred order 720p -> 480p -> 1080p -> 360p
-            file.defaultStream = file.proxyQualities['720p'] || file.proxyQualities['480p'] || file.proxyQualities['1080p'] || Object.values(file.proxyQualities)[0];
-          }
-
-          res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-          return res.end(JSON.stringify(result));
-        }
-
-        // Generic direct video / HLS / MP4 link
-        if (/\.(mp4|m3u8|webm|mkv)$/i.test(inputUrl) || inputUrl.includes('.m3u8')) {
-          res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-          return res.end(JSON.stringify({
-            ok: true,
-            platform: 'direct',
-            title: inputUrl.split('/').pop().split('?')[0] || 'Direct Video',
-            count: 1,
-            files: [{
-              fid: 'direct',
-              name: inputUrl.split('/').pop().split('?')[0] || 'Direct Video',
-              sizeFormatted: '',
-              defaultStream: `/api/proxy?url=${encodeURIComponent(inputUrl)}`,
-              proxyQualities: { 'Original': `/api/proxy?url=${encodeURIComponent(inputUrl)}` }
-            }]
-          }));
-        }
-
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: false, error: 'Unsupported link. Please paste a TeraBox share link or direct video URL.' }));
-      } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: false, error: err.message || 'Failed to resolve link' }));
-      }
+      try { req.body = body ? JSON.parse(body) : {}; } catch (_) { req.body = {}; }
+      res.status = function(code) { res.statusCode = code; return res; };
+      res.json = function(data) {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(data));
+        return res;
+      };
+      res.send = function(data) { res.end(data); return res; };
+      const handler = require('./api/resolve.js');
+      return handler(req, res);
     });
     return;
   }
 
   // API: Stream Proxy
-  if (pathname === '/api/proxy' && req.method === 'GET') {
-    const targetUrl = reqUrl.searchParams.get('url');
-    if (!targetUrl) {
-      res.writeHead(400, { 'Content-Type': 'text/plain' });
-      return res.end('Missing url parameter');
-    }
-    return handleProxy(req, res, targetUrl);
+  if (pathname === '/api/proxy') {
+    req.query = Object.fromEntries(reqUrl.searchParams.entries());
+    res.status = function(code) { res.statusCode = code; return res; };
+    res.send = function(data) { res.end(data); return res; };
+    const handler = require('./api/proxy.js');
+    return handler(req, res);
   }
 
   // Static File Serving

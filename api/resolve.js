@@ -1,4 +1,6 @@
 // Vercel Serverless Function: /api/resolve
+const vm = require('node:vm');
+
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
 function formatBytes(bytes) {
@@ -152,6 +154,92 @@ async function resolveTeraBox(targetUrl) {
   };
 }
 
+async function resolveStreamtape(inputUrl) {
+  const u = new URL(inputUrl);
+  const match = u.pathname.match(/\/(?:v|e)\/([0-9a-zA-Z_-]+)/);
+  if (!match) throw new Error('Invalid Streamtape URL');
+  const id = match[1];
+
+  const domains = [u.hostname, 'streamta.pe', 'strcloud.link', 'streamtape.com', 'streamtape.to'];
+  const uniqueDomains = [...new Set(domains.filter(Boolean))];
+
+  let html = '';
+  let successfulDomain = '';
+
+  for (const domain of uniqueDomains) {
+    try {
+      const embedUrl = 'https://' + domain + '/e/' + id;
+      const res = await fetch(embedUrl, {
+        headers: { 'User-Agent': UA },
+        signal: AbortSignal.timeout(6000)
+      });
+      if (res.ok) {
+        html = await res.text();
+        if (html.includes('get_video')) {
+          successfulDomain = domain;
+          break;
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (!html) throw new Error('Could not fetch Streamtape video page. The link may have expired or is blocked.');
+
+  const titleMatch = html.match(/<meta\s+name=["']og:title["']\s+content=["']([^"']+)["']/i) ||
+    html.match(/<title>([^<]+)<\/title>/i);
+  let title = titleMatch ? titleMatch[1].trim() : ('Streamtape Video ' + id);
+  title = title.replace(/\s*-\s*Streamtape.*$/i, '').trim();
+
+  const scriptRegex = /(?:robotlink|videolink|norobotlink|ideoolink|ideoooolink)\S*\.innerHTML\s*=\s*(['"][^'"]*['"](?:\s*\+\s*(?:['"][^'"]*['"]|\([^\)]+\)(?:\.substring\(\d+\))*))+)/gi;
+  let videoUrl = '';
+
+  for (const m of html.matchAll(scriptRegex)) {
+    const expr = m[1];
+    try {
+      let resolved = vm.runInNewContext(expr, {});
+      if (typeof resolved === 'string' && resolved.includes('get_video')) {
+        if (resolved.startsWith('//')) {
+          resolved = 'https:' + resolved;
+        } else if (resolved.startsWith('/' + successfulDomain)) {
+          resolved = 'https:/' + resolved;
+        } else if (resolved.startsWith('/')) {
+          resolved = 'https://' + successfulDomain + resolved;
+        }
+        videoUrl = resolved;
+        break;
+      }
+    } catch (_) {}
+  }
+
+  if (!videoUrl) {
+    const directMatch = html.match(/(?:https?:)?\/\/[^"'\s<>]+\/get_video\?[^"'\s<>]+/i);
+    if (directMatch) {
+      videoUrl = directMatch[0].startsWith('//') ? 'https:' + directMatch[0] : directMatch[0];
+    }
+  }
+
+  if (!videoUrl) throw new Error('Could not extract direct stream link from Streamtape.');
+
+  if (!videoUrl.includes('stream=')) {
+    videoUrl += (videoUrl.includes('?') ? '&' : '?') + 'stream=1';
+  }
+
+  return {
+    ok: true,
+    platform: 'streamtape',
+    title,
+    count: 1,
+    files: [{
+      fid: id,
+      name: title.endsWith('.mp4') ? title : (title + '.mp4'),
+      sizeFormatted: '',
+      qualities: {
+        'HD': videoUrl
+      }
+    }]
+  };
+}
+
 module.exports = async function handler(req, res) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -173,6 +261,7 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'URL parameter is required' });
     }
 
+    // 1. TeraBox
     const isTera = /(?:terabox|1024tera|freeterabox|terashare|4funbox|mirrobox|nephobox|momerybox|tibibox|dubox)/i.test(inputUrl);
     if (isTera) {
       const result = await resolveTeraBox(inputUrl);
@@ -191,7 +280,22 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(result);
     }
 
-    if (/\.(mp4|m3u8|webm|mkv)$/i.test(inputUrl) || inputUrl.includes('.m3u8')) {
+    // 2. Streamtape
+    const isStreamtape = /(?:streamtape|strtape|strcloud|tapecontent|streamta\.pe)/i.test(inputUrl);
+    if (isStreamtape) {
+      const result = await resolveStreamtape(inputUrl);
+      for (const file of result.files) {
+        file.proxyQualities = {};
+        for (const [q, streamUrl] of Object.entries(file.qualities)) {
+          file.proxyQualities[q] = `/api/proxy?url=${encodeURIComponent(streamUrl)}`;
+        }
+        file.defaultStream = file.proxyQualities['HD'] || Object.values(file.proxyQualities)[0];
+      }
+      return res.status(200).json(result);
+    }
+
+    // 3. Generic direct video / HLS
+    if (/\.(mp4|m3u8|webm|mkv)$/i.test(inputUrl) || inputUrl.includes('.m3u8') || inputUrl.includes('/get_video')) {
       const name = inputUrl.split('/').pop().split('?')[0] || 'Direct Video';
       return res.status(200).json({
         ok: true,
@@ -208,7 +312,7 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    return res.status(400).json({ ok: false, error: 'Unsupported link. Please paste a TeraBox share link or direct video URL.' });
+    return res.status(400).json({ ok: false, error: 'Unsupported link. Please paste a TeraBox share link, Streamtape link, or video URL.' });
   } catch (err) {
     return res.status(500).json({ ok: false, error: err.message || 'Failed to resolve link' });
   }
